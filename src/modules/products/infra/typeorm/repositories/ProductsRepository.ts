@@ -3,6 +3,7 @@ import { getRepository, Repository, In } from 'typeorm';
 import IProductsRepository from '@modules/products/repositories/IProductsRepository';
 import ICreateProductDTO from '@modules/products/dtos/ICreateProductDTO';
 import IUpdateProductsQuantityDTO from '@modules/products/dtos/IUpdateProductsQuantityDTO';
+import AppError from '@shared/errors/AppError';
 import Product from '../entities/Product';
 
 interface IFindProducts {
@@ -38,12 +39,46 @@ class ProductsRepository implements IProductsRepository {
     return product;
   }
 
-  public async findAllById(products: IFindProducts[]): Promise<void> {}
+  public async findAllById(products: IFindProducts[]): Promise<Product[]> {
+    const idList = products.map(product => product.id);
+
+    const orderList = await this.ormRepository.find({
+      where: { id: In(idList) },
+    });
+
+    if (idList.length !== orderList.length) {
+      throw new AppError('An product missing');
+    }
+
+    return orderList;
+  }
 
   public async updateQuantity(
     products: IUpdateProductsQuantityDTO[],
-  ): Promise<void> {
-    // TODO
+  ): Promise<Product[]> {
+    const productsData = await this.findAllById(products);
+    const newProducts = productsData.map(productData => {
+      const productFind = products.find(
+        product => product.id === productData.id,
+      );
+      if (!productFind) {
+        throw new AppError('product not find');
+      }
+
+      if (productData.quantity < productFind.quantity) {
+        throw new AppError('Insufficient product qunatity');
+      }
+
+      const newProduct = productData;
+
+      newProduct.quantity -= productFind.quantity;
+
+      return newProduct;
+    });
+
+    await this.ormRepository.save(newProducts);
+
+    return newProducts;
   }
 }
 

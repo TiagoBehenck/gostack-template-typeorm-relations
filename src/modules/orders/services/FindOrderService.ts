@@ -18,7 +18,7 @@ class FindOrderService {
   ) {}
 
   public async execute({ id }: IRequest): Promise<Order | undefined> {
-    // TODO
+    return undefined;
   }
 }
 
