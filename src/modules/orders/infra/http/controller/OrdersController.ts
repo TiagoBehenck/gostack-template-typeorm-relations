@@ -11,7 +11,7 @@ export default class OrdersController {
 
     const findedOrder = container.resolve(FindOrderService);
 
-    const order = findedOrder.execute({ id });
+    const order = await findedOrder.execute({ id });
 
     return response.status(200).json(order);
   }
